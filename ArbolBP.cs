@@ -42,7 +42,7 @@ namespace PruebaArbolBPlus
             else if (EsHoja(nodo) == false) //No es hoja
             {
                 var NodeSun = new NodoBP<T>();
-                NodeSun = root.hijos[InsertarHjo(root, value)]; //HIJO A DONDE INSERTAR
+                NodeSun = root.hijos[HijoAEntrar(root, value)]; //HIJO A DONDE INSERTAR
                 Insertar2(NodeSun, value); //RECURSIVIDAD
                 //METODO DE BUSCAR POSICION CORRESPONDIENTE
             }
@@ -80,7 +80,7 @@ namespace PruebaArbolBPlus
             node.values.Add(value);
             node.values.Sort((x, y) => x.CompareTo(y));
         }
-        public int InsertarHjo(NodoBP<T> node, T valor)
+        public int HijoAEntrar(NodoBP<T> node, T valor)
         {
             if (node.values.Count == 1)
             {
@@ -218,6 +218,43 @@ namespace PruebaArbolBPlus
         }
         #endregion
 
+        #region Busqueda
+        static T ValorEncontrado;
+        public T busqueda(T value, NodoBP<T> node)
+        {
+            NodoBP<T> PrimerHijo = new NodoBP<T>();
+            bool encontrado = false;
+            while (node.hijos.Count > 0)//Ciclo para llegar a la hoja mas izquierda
+            {
+                PrimerHijo = IrAlInicio(node);
+                node = PrimerHijo;
+            }
+            foreach (var item in node.values)
+            {
+                if (item.CompareTo(value) == 0)
+                {
+                    encontrado = true;
+                    ValorEncontrado = item;
+                    break;
+                }
+            }
+            if (encontrado == false && node.hermano != null)//Si no lo encuentra
+            {
+                return busqueda(value, node.hermano);//Se va al hermano
+            }
+            else
+            {
+                return ValorEncontrado;
+            }            
+        }
+        #endregion
+
+        #region MetodosAuxBusqueda
+        public NodoBP<T> IrAlInicio(NodoBP<T> node)
+        {
+            return node.hijos[0];
+        }
+        #endregion
         public IEnumerator<T> GetEnumerator()
         {
             throw new NotImplementedException();
