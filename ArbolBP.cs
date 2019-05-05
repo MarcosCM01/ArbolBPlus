@@ -220,7 +220,28 @@ namespace PruebaArbolBPlus
 
         #region Busqueda
         static T ValorEncontrado;
-        public T busqueda(T value, NodoBP<T> node)
+        public T busquedaEnRaiz(T valor)
+        {
+            bool finded = false;
+            foreach (var item in root.values)
+            {
+                if (item.CompareTo(valor) == 0)
+                {
+                    finded = true;
+                    ValorEncontrado = item;
+                    break;
+                }
+            }
+            if (finded == true)
+            {
+                return ValorEncontrado;
+            }
+            else
+            {
+                return busquedaEnHojas(valor, root);
+            }
+        }
+        public T busquedaEnHojas(T value, NodoBP<T> node)
         {
             NodoBP<T> PrimerHijo = new NodoBP<T>();
             bool encontrado = false;
@@ -240,7 +261,7 @@ namespace PruebaArbolBPlus
             }
             if (encontrado == false && node.hermano != null)//Si no lo encuentra
             {
-                return busqueda(value, node.hermano);//Se va al hermano
+                return busquedaEnHojas(value, node.hermano);//Se va al hermano
             }
             else
             {
