@@ -12,9 +12,12 @@ namespace PruebaArbolBPlus
         #region inicializacionBTree+
 
         public NodoBP<T> root { get; set; }
+        public int siguientePosicion { get; set; }
         public ArbolBP()
         {
             root = null;
+            siguientePosicion = 2;
+            
         }
         #endregion
 
@@ -188,6 +191,7 @@ namespace PruebaArbolBPlus
         {
             aux.max = original.max;
             aux.min = original.min;
+            aux.id = siguientePosicion;
             aux.id = original.id++;
         }
 
@@ -219,29 +223,14 @@ namespace PruebaArbolBPlus
         #endregion
 
         #region Busqueda
+        //INDICAR EN EL CONTROLADOR QUE SI ES FALSO, INDIQUE QUE NO SE ENCONTRO EL DATO
         static T ValorEncontrado;
-        public T busquedaEnRaiz(T valor)
+        public void busquedaEnRaiz(T valor)
         {
-            bool finded = false;
-            foreach (var item in root.values)
-            {
-                if (item.CompareTo(valor) == 0)
-                {
-                    finded = true;
-                    ValorEncontrado = item;
-                    break;
-                }
-            }
-            if (finded == true)
-            {
-                return ValorEncontrado;
-            }
-            else
-            {
-                return busquedaEnHojas(valor, root);
-            }
+            busquedaEnHojas(valor, root);
+           
         }
-        public T busquedaEnHojas(T value, NodoBP<T> node)
+        public bool busquedaEnHojas(T value, NodoBP<T> node)
         {
             NodoBP<T> PrimerHijo = new NodoBP<T>();
             bool encontrado = false;
@@ -259,14 +248,20 @@ namespace PruebaArbolBPlus
                     break;
                 }
             }
-            if (encontrado == false && node.hermano != null)//Si no lo encuentra
+            if (encontrado == false && node.hermano != null)//Si no lo encuentra en ese nodo, busca en el hermano
             {
                 return busquedaEnHojas(value, node.hermano);//Se va al hermano
             }
-            else
+            else if (encontrado == false && node.hermano == null)
             {
-                return ValorEncontrado;
-            }            
+                return false;//DEVOLVER QUE NO SE ENCONTRO EL DATO
+            }
+            else if (encontrado == true)
+            {
+                return true;
+            }
+            return encontrado;
+            
         }
         #endregion
 
@@ -275,9 +270,85 @@ namespace PruebaArbolBPlus
         {
             return node.hijos[0];
         }
+        public T RetornarValorBuscado() //SI ENCONTRO EL VALOR, RETORNA EL VALOR
+        {
+            return ValorEncontrado;
+        }        
+        #endregion
+
+        #region Eliminacion
+        //EN EL CONTROLADOR, MEJOR MANDAR A LLAMAR SI ESTA.
+        public void Eliminar(T value)
+        {
+            EliminarValor(value, root);
+        }
+        public void EliminarValor(T valor, NodoBP<T> nodo)
+        {
+            NodoBP<T> aux = new NodoBP<T>();
+            aux = BusquedaDelNodo(valor, nodo);
+            foreach (var item in aux.values)
+            {
+                if (item.CompareTo(valor) == 0)
+                {
+                    aux.values.Remove(valor);
+                    aux.values.Sort((x, y) => x.CompareTo(y));
+                    break;
+                }
+            }
+            if (aux.values.Count < aux.min)//SI EL NODO QUEDA EN UNDERFLOW
+            {
+                VerificarEnPadre(aux.padre, valor);//SI EL VALOR ELIMINADO DEJA EN UNDERFLOW, Y ESTA EN EL PADRE, TAMBIEN SE ELIMINA
+            }
+            //FALTA: SABER QUE HACER CON LA DISTRIBUCION DE CLAVES, YA QUE EL PADRE TAMBIEN PUEDE QUEDAR EN UNDERFLOW. VER IMAGEN
+    
+        }
+        #endregion
+
+        #region metodosAuxEliminacion
+        public NodoBP<T>BusquedaDelNodo(T value, NodoBP<T> nodoIndicado)
+        {
+            bool encontrado = false;
+            NodoBP<T> Aux = new NodoBP<T>();
+            while (nodoIndicado.hijos.Count >0)
+            {
+                Aux = IrAlInicio(nodoIndicado);
+                nodoIndicado = Aux;
+            }
+            foreach (var item in Aux.values)
+            {
+                if (item.CompareTo(value) == 0)
+                {
+                    encontrado = true;
+                }
+
+            }
+            if (encontrado == false)
+            {
+                return BusquedaDelNodo(value, nodoIndicado.hermano);
+            }
+            else
+            {
+                return Aux;
+            }
+        }
+
+        public void VerificarEnPadre(NodoBP<T> nodo, T valor)
+        {
+            foreach (var item in nodo.values)
+            {
+                if (item.CompareTo(valor) == 0)
+                {
+                    nodo.values.Remove(valor);
+                    nodo.values.Sort((x, y) => x.CompareTo(y));
+                    break;
+                }
+            }
+          
+        }
         #endregion
         public IEnumerator<T> GetEnumerator()
         {
+           
             throw new NotImplementedException();
         }
 
