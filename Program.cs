@@ -19,8 +19,9 @@ namespace PruebaArbolBPlus
             {
                 arbolito.InsertarNodo(Convert.ToInt32(lineas[i]));
             }
-            arbolito.busquedaEnRaiz(27);
-            
+            //arbolito.busquedaEnRaiz(27);
+            arbolito.Eliminar(29);
+            arbolito.Eliminar(31);
         }
     }
 }

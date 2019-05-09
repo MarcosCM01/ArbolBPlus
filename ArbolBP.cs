@@ -115,9 +115,7 @@ namespace PruebaArbolBPlus
             NodoBP<T> izq = new NodoBP<T>();
             NodoBP<T> padreAux = new NodoBP<T>();//AUXILIAR para el intercambio de datos
             NodoBP<T> der = new NodoBP<T>();
-            Asignacion(node, izq);
-            Asignacion(node, der);
-
+           
             for (int i = 0; i < node.min; i++)//Agrego los menores
             {
                 izq.values.Add(node.values[i]);
@@ -132,6 +130,10 @@ namespace PruebaArbolBPlus
                 RelacionPadreHijo(node.padre, izq);
                 RelacionPadreHijo(node.padre, der);
 
+                Asignacion(node, izq);
+                izq.id = node.id;
+                siguientePosicion--;
+                Asignacion(node, der);
                 node.padre.values.Add(node.values[node.min]);
                 node.padre.values.Sort((x, y) => x.CompareTo(y));
 
@@ -161,6 +163,8 @@ namespace PruebaArbolBPlus
             }
             else if (node.padre == null && node.hijos.Count < 5)
             {
+                Asignacion(node, izq);
+                Asignacion(izq, der);
                 padreAux.values.Add(node.values[node.min]); //SUBE LA MEDIANA
                 RelacionPadreHijo(node, izq);
                 RelacionPadreHijo(node, der);
@@ -170,6 +174,8 @@ namespace PruebaArbolBPlus
             }
             else if (node.padre == null && node.hijos.Count >= 5)
             {
+                Asignacion(node, izq);
+                Asignacion(izq, der);
                 T value = node.values[node.min];
                 NuevosHijos(node, izq, 0, node.min);
                 NuevosHijos(node, der, node.min + 1, node.max + 1);
@@ -192,7 +198,7 @@ namespace PruebaArbolBPlus
             aux.max = original.max;
             aux.min = original.min;
             aux.id = siguientePosicion;
-            aux.id = original.id++;
+            siguientePosicion++;
         }
 
         public void AsignarHermano(NodoBP<T> nodo)
@@ -224,57 +230,47 @@ namespace PruebaArbolBPlus
 
         #region Busqueda
         //INDICAR EN EL CONTROLADOR QUE SI ES FALSO, INDIQUE QUE NO SE ENCONTRO EL DATO
-        static T ValorEncontrado;
         public void busquedaEnRaiz(T valor)
         {
             busquedaEnHojas(valor, root);
            
         }
-        public bool busquedaEnHojas(T value, NodoBP<T> node)
+        static T val;
+        public object busquedaEnHojas(T value, NodoBP<T> node)
         {
-            NodoBP<T> PrimerHijo = new NodoBP<T>();
             bool encontrado = false;
-            while (node.hijos.Count > 0)//Ciclo para llegar a la hoja mas izquierda
-            {
-                PrimerHijo = IrAlInicio(node);
-                node = PrimerHijo;
-            }
             foreach (var item in node.values)
             {
-                if (item.CompareTo(value) == 0)
+                if (item.CompareTo(value) == 0 && node.hijos.Count >0)//PARA QUE LO ENCUENTRE EN LAS HOJAS
                 {
+                    val = item;
                     encontrado = true;
-                    ValorEncontrado = item;
                     break;
                 }
             }
-            if (encontrado == false && node.hermano != null)//Si no lo encuentra en ese nodo, busca en el hermano
+
+            if (encontrado == false && node.values.Count >0)
             {
-                return busquedaEnHojas(value, node.hermano);//Se va al hermano
-            }
-            else if (encontrado == false && node.hermano == null)
-            {
-                return false;//DEVOLVER QUE NO SE ENCONTRO EL DATO
+                NodoBP<T> nodoAux = new NodoBP<T>();
+                nodoAux = node.hijos[HijoAEntrar(node, value)];
+                return busquedaEnHojas(value, nodoAux);
             }
             else if (encontrado == true)
             {
-                return true;
+                return val;
             }
-            return encontrado;
+            else if (encontrado == false && node.hijos.Count == 0)
+            {
+                return "El dato que busca no se encuentra";
+            }
+            else
+            {
+                return val;
+            }
             
         }
         #endregion
 
-        #region MetodosAuxBusqueda
-        public NodoBP<T> IrAlInicio(NodoBP<T> node)
-        {
-            return node.hijos[0];
-        }
-        public T RetornarValorBuscado() //SI ENCONTRO EL VALOR, RETORNA EL VALOR
-        {
-            return ValorEncontrado;
-        }        
-        #endregion
 
         #region Eliminacion
         //EN EL CONTROLADOR, MEJOR MANDAR A LLAMAR SI ESTA.
@@ -285,7 +281,8 @@ namespace PruebaArbolBPlus
         public void EliminarValor(T valor, NodoBP<T> nodo)
         {
             NodoBP<T> aux = new NodoBP<T>();
-            aux = BusquedaDelNodo(valor, nodo);
+            aux = BusquedaDelNodo(valor, nodo);//nodo donde se encuentre el valor a eliminar
+
             foreach (var item in aux.values)
             {
                 if (item.CompareTo(valor) == 0)
@@ -295,9 +292,29 @@ namespace PruebaArbolBPlus
                     break;
                 }
             }
+
             if (aux.values.Count < aux.min)//SI EL NODO QUEDA EN UNDERFLOW
             {
-                VerificarEnPadre(aux.padre, valor);//SI EL VALOR ELIMINADO DEJA EN UNDERFLOW, Y ESTA EN EL PADRE, TAMBIEN SE ELIMINA
+                //VERIFICAR SI ES EL ULTIMO HIJO
+                //VerificarSiEsUltimoHijo(nodo, aux);
+                if (aux.hermano != null)
+                {
+                    //EL HERMANO PUEDE PRESTAR
+                    if (aux.hermano.values.Count > aux.min)
+                    {
+                        PrestarValores(aux);
+                    }
+                    else //SE FUSIONA CON EL HERMANO
+                    {
+                        FusionarNodos(aux);
+                    }
+                }
+                else 
+                {
+                    //ES PORQUE ES EL ULTIMO
+                    PasarAlaIzquierda(aux, aux.padre.hijos[aux.padre.hijos.Count - 2]);
+                }
+                
             }
             //FALTA: SABER QUE HACER CON LA DISTRIBUCION DE CLAVES, YA QUE EL PADRE TAMBIEN PUEDE QUEDAR EN UNDERFLOW. VER IMAGEN
     
@@ -308,42 +325,75 @@ namespace PruebaArbolBPlus
         public NodoBP<T>BusquedaDelNodo(T value, NodoBP<T> nodoIndicado)
         {
             bool encontrado = false;
-            NodoBP<T> Aux = new NodoBP<T>();
-            while (nodoIndicado.hijos.Count >0)
+            foreach (var item in nodoIndicado.values)
             {
-                Aux = IrAlInicio(nodoIndicado);
-                nodoIndicado = Aux;
-            }
-            foreach (var item in Aux.values)
-            {
-                if (item.CompareTo(value) == 0)
+                if (item.CompareTo(value) == 0 && nodoIndicado.hijos.Count ==0)//Para verificar que si este en una hoja
                 {
                     encontrado = true;
+                    return nodoIndicado;
+                    
                 }
-
             }
-            if (encontrado == false)
+            if (encontrado == false && nodoIndicado.hijos.Count > 0)
             {
-                return BusquedaDelNodo(value, nodoIndicado.hermano);
+                NodoBP<T> Aux = new NodoBP<T>();
+                Aux = nodoIndicado.hijos[HijoAEntrar(nodoIndicado, value)];
+                return BusquedaDelNodo(value, Aux);
             }
             else
             {
-                return Aux;
+                return nodoIndicado;
             }
         }
-
-        public void VerificarEnPadre(NodoBP<T> nodo, T valor)
+        public void PrestarValores(NodoBP<T> nodo)
         {
-            foreach (var item in nodo.values)
+            nodo.values.Add(nodo.hermano.values[0]);
+            T val = nodo.hermano.values[0];
+            foreach (var item in nodo.padre.values)
             {
-                if (item.CompareTo(valor) == 0)
+                if (item.CompareTo(val) == 0)
                 {
-                    nodo.values.Remove(valor);
-                    nodo.values.Sort((x, y) => x.CompareTo(y));
+                    nodo.padre.values.Remove(val);
+                    nodo.padre.values.Sort((x, y) => x.CompareTo(y));
                     break;
                 }
             }
-          
+            nodo.hermano.values.Remove(nodo.hermano.values[0]);
+            nodo.hermano.values.Sort((x, y) => x.CompareTo(y));
+        }
+        public void FusionarNodos(NodoBP<T> nodo)
+        {
+            for (int i = 0; i < nodo.hermano.values.Count; i++)
+            {
+                nodo.values.Add(nodo.hermano.values[i]);
+            }
+            nodo.values.Sort((x, y) => x.CompareTo(y));
+
+            foreach (var item in nodo.padre.values)
+            {
+                if (item.CompareTo(nodo.hermano.values[0]) == 0)
+                {
+                    nodo.padre.values.Remove(item);
+                    nodo.padre.values.Sort((x, y) => x.CompareTo(y));
+                    break;
+                }
+            }
+            nodo.padre.hijos.Remove(nodo.hermano);
+            nodo.hermano.values.Clear();
+            nodo.hermano = null;
+            nodo.hermano = nodo.hermano.hermano;
+        }
+        public void PasarAlaIzquierda(NodoBP<T> nodo, NodoBP<T> izquierdo)
+        {
+            for (int i = 0; i < nodo.values.Count; i++)
+            {
+                izquierdo.values.Add(nodo.values[i]);
+            }
+            izquierdo.values.Sort();
+            nodo.padre.values.Remove(nodo.padre.values[nodo.padre.values.Count-1]);
+            nodo.values.Clear();
+            nodo.padre.hijos.Remove(nodo);
+            izquierdo.hermano = null;
         }
         #endregion
         public IEnumerator<T> GetEnumerator()
